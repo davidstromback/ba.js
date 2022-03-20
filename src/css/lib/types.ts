@@ -1,30 +1,56 @@
-import type { PrimitiveElement } from "../../vdom";
-import type { Visitor } from "./util/visit";
+import type { Visitor } from "./ast/util/visit";
+
+import { DECLARATION_BLOCK, NESTED_AT_RULE, ROOT } from "./ast/node";
+
+const css: Literal = { "@media (sfafaasf)": {} };
 
 export declare namespace CSS {
-  export type Value = string | number | (string | number)[];
+  type PropertyName = {
+    [K in keyof CSSStyleDeclaration]: K extends string
+      ? CSSStyleDeclaration[K] extends string
+        ? K
+        : never
+      : never;
+  }[keyof CSSStyleDeclaration];
 
-  export interface Literal {
-    [key: string]: Literal | Value | boolean | null | undefined | void;
+  type Properties<T> = {
+    [K in PropertyName]?: T;
+  };
+
+  export type Value = string | number;
+
+  export type Void = boolean | null | undefined | void;
+
+  export type MaybeCallback<T, V> = ((props: T) => MaybeCallback<T, V>) | V;
+
+  export interface Literal extends Properties<Value | Void> {
+    [key: string]: Literal | Value | Void;
   }
 
-  export interface Root {
-    type: "root";
-    value: Literal;
-    declarations: [string, Value][];
-    children: Child[];
+  export interface CallbackLiteral<T = any>
+    extends Properties<MaybeCallback<T, Value | Void>> {
+    [key: string]: MaybeCallback<T, CallbackLiteral<T> | Value | Void>;
   }
 
-  export interface Child {
-    type: "declarationBlock" | "nestedAtRule";
-    value: Literal;
+  export interface Root<T = CallbackLiteral> {
+    type: typeof ROOT;
+    value: T;
     declarations: [string, Value][];
-    children: Child[];
-    parent: Node;
+    children: Child<T>[];
+    parent: undefined;
+    selector: undefined;
+  }
+
+  export interface Child<T = CallbackLiteral> {
+    type: typeof DECLARATION_BLOCK | typeof NESTED_AT_RULE;
+    value: T;
+    declarations: [string, Value][];
+    children: Child<T>[];
+    parent: Node<T>;
     selector: string;
   }
 
-  export type Node = Root | Child;
+  export type Node<T = CallbackLiteral> = Root<T> | Child<T>;
 
   export interface CSS {
     (css: Literal): string;
@@ -41,15 +67,18 @@ export declare namespace CSS {
   }
 
   export interface Styled {
-    <T extends PrimitiveElement<any>>(element: T, style: Literal): T;
+    <T extends (...args: any[]) => any>(element: T, style: Literal): T;
   }
 }
 
 export type Value = CSS.Value;
 export type Literal = CSS.Literal;
-export type Root = CSS.Root;
-export type Child = CSS.Child;
-export type Node = CSS.Node;
+export type Void = CSS.Void;
+export type MaybeCallback<T, V> = CSS.MaybeCallback<T, V>;
+export type CallbackLiteral<T = any> = CSS.CallbackLiteral<T>;
+export type Root<T = CallbackLiteral> = CSS.Root<T>;
+export type Child<T = CallbackLiteral> = CSS.Child<T>;
+export type Node<T = CallbackLiteral> = CSS.Node<T>;
 export type Options = CSS.Options;
 export type CSS = CSS.CSS;
 export type Global = CSS.Global;

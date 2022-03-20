@@ -2,7 +2,7 @@ const { hasOwnProperty } = Object.prototype;
 
 export interface Manager {
   has: (key: string) => boolean;
-  enter: (key: string, css?: string) => void;
+  enter: (key: string, css?: StyleSheet) => void;
   exit: (key: string) => void;
 }
 
@@ -46,7 +46,6 @@ export const createManager = (element?: HTMLStyleElement): Manager => {
   const requestClean = () => {
     if (typeof timeout !== "undefined") {
       clearTimeout(timeout);
-      timeout = undefined;
     }
     timeout = setTimeout(clean, 1000);
   };

@@ -1,21 +1,17 @@
 {
-    "compilerOptions": {
-        "target": "ES6",
-        "module": "ES6",
-        "strict": true,
-        "declaration": true,
-        "noImplicitReturns": true,
-        "removeComments": true,
-        "esModuleInterop": true,
-        "lib": ["es2019", "dom"],
-        "jsx": "preserve",
-        "moduleResolution": "node"
-    },
-    "include": [
-        "src/**/*"
-    ],
-    "exclude": [
-        "node_modules",
-        "**/*.spec.ts"
-    ]
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "ES6",
+    "strict": true,
+    "declaration": true,
+    "noImplicitReturns": true,
+    "removeComments": true,
+    "esModuleInterop": true,
+    "lib": ["es2020", "dom"],
+    "jsx": "preserve",
+    "moduleResolution": "node",
+    "downlevelIteration": false
+  },
+  "include": ["src/**/*", "old"],
+  "exclude": ["node_modules", "**/*.spec.ts"]
 }

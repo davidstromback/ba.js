@@ -1,27 +1,31 @@
-import { Literal } from "./css";
-import { process } from "./css/lib/ast/process";
-import { dashify } from "./css/lib/ast/visitors/dashify";
-import { hoist } from "./css/lib/ast/visitors/hoist";
-import { selectors } from "./css/lib/ast/visitors/selectors";
-import { split } from "./css/lib/ast/visitors/split";
-import { units } from "./css/lib/ast/visitors/units";
 
-export default (root: Literal) => process(root, [split, dashify, units, selectors, hoist])
+import { tokenize } from "./css/tokenize";
+
+for (const token of tokenize(`<test foo="bar" />`)) {
+    console.log(token)
+}
 
 /*
-
-import { render } from "./render";
-import { component, article, button, div, form, h1, input } from "./vdom";
+import { SetState } from "../old/render/hooks";
+import { createFactory, render, useState } from "./2.0";
+import { createContext } from "./2.0/hooks";
+import { PropsWithChildren } from "./2.0/types";
 import { styled, global } from "./css";
-import { useEffect, useState } from "./render/hooks";
-import { prescence, transition } from "./motion/motion";
+
+const h1 = createFactory("h1");
+const div = createFactory("div");
+const button = createFactory("button");
 
 global({
+  html: {
+    height: "100%",
+  },
   body: {
     fontFamily: "'Poppins', sans-serif",
     padding: 0,
+    height: "100%",
     margin: 0,
-    background: "yellow",
+    background: "#fffc40",
     "@media (max-height: 9999px)": {
       ".foobar": {
         background: "red",
@@ -34,199 +38,83 @@ global({
       },
     },
   },
-});
-
-const wrapper = styled(div, {
-  borderRadius: 24,
-  backgroundColor: "#fff",
-  marginBottom: 24,
-  padding: 24,
-  maxWidth: 640,
-  margin: [0, "auto"],
-});
-
-const getMyValue = () => 0
-
-const title = styled(h1, {
-    fontSize: 36, // Defaults units appended to number values, customizeable by property name or value type
-    margin: [0, getMyValue()], // Supports arrays, automatically joins values and appends default units to numbers
-    fontWeight: 700, // Numeric css value types have no defaults and are left as is
-    fontStyle: "italic", // Camelcased property names are converted to dash-case
-    color: "#444",
-    textAlign: "center",
-    "@media (min-height: 200px)": { // Hoists @rules to top
-      fontSize: 64, // Splits direct child properties of atrules into new copy of parent
-      '.child': {   // While preserving declaration blocks and correctly qualifying their selectors
-          "@media (min-height: 400px)": { // Preserves nested at rules, flattens other blocks
-              scale: 2
-          }
-      }
-    },
-    [`${wrapper} &`]: { // Can refer to other components
-        color: 'red'
-    }
-  });
-  
-const card = styled(article, {
-  borderRadius: 24,
-  backgroundColor: "#fafafa",
-  marginBottom: 24,
-  padding: [24, 36],
-  display: "flex",
-  alignItems: "center",
-});
-
-const addTodoForm = styled(form, {
-  display: "flex",
-});
-
-const todoCheckbox = styled(input, {
-  width: 24,
-  height: 24,
-  marginRight: 24,
-});
-
-const todoInput = styled(input, {
-  appearence: "none",
-  borderRadius: 8,
-  fontSize: 24,
-  backgroundColor: "#f0f0f0",
-  margin: 0,
-  padding: 24,
-  display: "flex",
-  outline: "none",
-  border: "none",
-  marginRight: 24,
-  flexGrow: 1,
-});
-
-const todoTitle = styled(h1, {
-  fontSize: 24,
-  fontWeight: 500,
-  color: "#444",
-  flexGrow: 1,
-});
-
-const addTodoButton = styled(button, {
-  all: "unset",
-  fontSize: 24,
-  fontWeight: 500,
-  display: "block",
-  margin: 0,
-  padding: 24,
-  backgroundColor: "#3FC380",
-  border: [2, "solid", "#3FC380"],
-  color: "#ffffff",
-  transition: ["background-color", 120, "ease-in-out"],
-  borderRadius: 8,
-  "&:disabled": {
-    backgroundColor: "#999",
-    border: [2, "solid", "#999"],
+  "#root": {
+    height: "100%",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 
-const removeTodoButton = styled(button, {
-  all: "unset",
-  fontSize: 24,
-  display: "block",
+const wrapper = styled(div, {
+  marginBottom: 24,
+  padding: 24,
+  maxWidth: 640,
+  borderRadius: 48,
+  height: "70%",
+  display: "flex",
+  flexDirection: "column",
+  background: "linear-gradient(145deg, #ffff44, #e6e33a)",
+  boxShadow: "20px 20px 60px #d9d636, -20px -20px 60px #ffff4a",
 });
 
-const clock = component(() => {
-  const [date, setDate] = useState(new Date());
-  useEffect(() => {
-    console.log("mounted clock");
-    const interval = setInterval(() => setDate(() => new Date()), 1000);
-
-    return () => {
-      clearInterval(interval);
-      console.log("unmounted clock");
-    };
-  }, []);
-
-  return [date.getHours(), date.getMinutes(), date.getSeconds()]
-    .map((num) => num.toString().padStart(2, "0"))
-    .join(":");
+const title = styled(h1, {
+  fontSize: 36,
+  fontWeight: 700,
+  fontStyle: "italic",
+  color: "#444",
+  textAlign: "center",
+  "@media (min-height: 200px)": {
+    fontSize: 64,
+    ".child": {
+      "@media (min-height: 400px)": {
+        fontSize: 2,
+      },
+    },
+  },
 });
 
-const todoForm = component(
-  (props: { todos: string[]; onSubmit: (value: string) => void }) => {
-    const [value, setValue] = useState("");
+const todosContext = createContext<{
+    todos: string[];
+    setTodos: SetState<string[]>
+}>({
+  todos: ["hej"],
+  setTodos: () => {}
+});
 
-    const handleSubmit = (event: Event) => {
-      setValue(() => "");
-      event.preventDefault();
-      props.onSubmit(value);
-    };
-
-    const handleInput = (event: Event) => {
-      setValue(() => (event.target as HTMLInputElement).value);
-    };
-
-    const disabled = value === "" || props.todos.includes(value);
-
-    return addTodoForm({ onSubmit: handleSubmit }, [
-      todoInput({ value, onInput: handleInput }),
-      addTodoButton({ type: "submit", disabled }, ["add todo"]),
-    ]);
-  }
-);
-
-const todosListItem = component(
-  (props: { todo: string; onRemove: () => void }) => {
-    const [checked, setChecked] = useState(false);
-
-    const handleInput = (event: Event) =>
-      setChecked(() => (event.target as HTMLInputElement).checked);
-
-    return card([
-      clock(),
-      todoCheckbox({ type: "checkbox", onInput: handleInput, checked }),
-      todoTitle([props.todo]),
-      removeTodoButton({ onClick: props.onRemove }, ["🗑️"]),
-    ]);
-  }
-);
-
-const todosList = component(
-  (props: { todos: string[]; onRemove: (index: number) => void }) =>
-    div([
-      prescence(
-        props.todos.map((todo: string, index: number) =>
-          transition({
-            key: todo,
-            enterDuration: 1000,
-            exitDuration: 1000,
-            render: (phase) => {
-              console.log(phase);
-              return todosListItem({
-                todo,
-                onRemove: () => props.onRemove(index),
-              });
-            },
-          })
-        )
-      ),
-    ])
-);
-
-const app = component(() => {
+const todosApp = createFactory(({ children }: PropsWithChildren) => {
   const [todos, setTodos] = useState<string[]>([]);
 
-  const handleSubmit = (value: string) => setTodos((prev) => [...prev, value]);
-
-  const handleRemove = (index: number) =>
-    setTodos((state) => {
-      const next = state.slice();
-      next.splice(index, 1);
-      return next;
-    });
-
-  return wrapper([
-    title(["todos"]),
-    todosList({ todos, onRemove: handleRemove }),
-    todoForm({ todos, onSubmit: handleSubmit }),
-  ]);
+  return todosContext({todos, setTodos}, children)
 });
 
-render(app(), () => document.getElementById("root")!);
+const component = createFactory((props: { children: string }) => {
+  return div(props.children);
+});
+
+const counter = createFactory(() => {
+  const [count, setCount] = useState(0);
+
+  const increment = () => {
+    setCount((prev) => prev + 1);
+  };
+
+  const decrement = () => {
+    setCount((prev) => prev - 1);
+  };
+
+  return [
+    button({ key: 1, onClick: increment }, "increment"),
+    ...Array.from(Array(count))
+      .map((_, i) => div(i))
+      .reverse(),
+    button({ onClick: decrement }, "decrement"),
+  ];
+});
+
+const app = createFactory(() => {
+  return wrapper([title("todos"), div([counter()])]);
+});
+
+render(() => document.getElementById("root")!, app());
 */

@@ -3,8 +3,6 @@ module.exports = {
   output: {
     filename: 'bundle.js',
     path: __dirname + '/dist',
-    library: 'jajf',
-    libraryTarget: 'umd',
   },
   externals: {
   },

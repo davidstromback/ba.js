@@ -1,20 +1,31 @@
-import type { Node } from "../../types";
-import type { Visitor } from "../../util/visit";
+import type { CallbackLiteral, Node } from "../../types";
+import type { Visitor } from "../util/visit";
 
-import { createChild } from "../node";
+import { createNode, getType } from "../node";
 
-export const parse: Visitor<Node> = (node) => {
-  for (const key of Object.keys(node.value)) {
-    const value = node.value[key];
-    if (
-      typeof value === "string" ||
-      typeof value === "number" ||
-      Array.isArray(value)
-    ) {
-      node.declarations.push([key, value]);
-    } else if (typeof value === "object" && value !== null) {
-      const type = key.startsWith("@") ? "nestedAtRule" : "declarationBlock";
-      node.children.push(createChild(type, value, key, node));
+export const parse =
+  <T>(props: T): Visitor<Node<CallbackLiteral<T>>> =>
+  (node) => {
+    const { children, declarations, value: literal } = node;
+    const keys = Object.keys(literal);
+    const { length } = keys;
+
+    for (let i = 0; i < length; i++) {
+      const key = keys[i].trim();
+      let value = literal[key];
+
+      while (typeof value === "function") {
+        value = value(props);
+      }
+
+      if (typeof value === "string" || typeof value === "number") {
+        declarations.push([key, value]);
+      } else if (
+        typeof value === "object" &&
+        !Array.isArray(value) &&
+        value !== null
+      ) {
+        children.push(createNode(getType(key), value, key, node));
+      }
     }
-  }
-};
+  };

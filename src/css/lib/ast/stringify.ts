@@ -1,34 +1,84 @@
 import type { Child, Node, Value } from "../types";
 
-const asString = (value: Value) => {
+interface Printer {
+  setBuffer: (next: string[]) => void;
+  openBracket: (selector: string) => void;
+  printDeclaration: (key: string, value: string) => void;
+  closeBracket: () => void;
+}
+
+const stringifyValue = (value: Value) => {
   return Array.isArray(value) ? value.join(" ") : value.toString();
 };
 
-export const stringify = (() => {
-  let buffer: string[] = [];
+const createStringifier = (printer: Printer) => {
+  const { setBuffer, openBracket, printDeclaration, closeBracket } = printer;
 
   const inner = (node: Node) => {
-    for (const [key, value] of node.declarations) {
-      buffer.push(key, ":", asString(value), ";\n");
+    const { declarations, children } = node;
+
+    for (let i = 0; i < declarations.length; i++) {
+      const declaration = declarations[i];
+      printDeclaration(declaration[0], stringifyValue(declaration[1]));
     }
 
-    for (const child of node.children) {
-      outer(child);
+    for (let i = 0; i < children.length; i++) {
+      outer(children[i]);
     }
   };
 
   const outer = (node: Child) => {
-    buffer.push(node.selector + "{\n");
+    openBracket(node.selector);
     inner(node);
-    buffer.push("}\n");
+    closeBracket();
   };
 
   return (root: Node) => {
-    console.log(root);
-    buffer = [];
+    const buffer: string[] = [];
+
+    setBuffer(buffer);
 
     inner(root);
 
     return buffer.join("");
   };
+};
+
+const minifyPrinter = ((): Printer => {
+  let buffer = [];
+
+  return {
+    setBuffer: (next) => {
+      buffer = next;
+    },
+    printDeclaration: (key, value) => buffer.push(key, ": ", value, ";"),
+    openBracket: (selector: string) => buffer.push(selector, "{"),
+    closeBracket: () => buffer.push("}"),
+  };
 })();
+
+const prettyPrinter = ((): Printer => {
+  let indent = "";
+  let buffer = [];
+
+  return {
+    setBuffer: (next) => {
+      indent = "";
+      buffer = next;
+    },
+    printDeclaration: (key, value) => {
+      buffer.push(indent, key, ": ", value, ";\n");
+    },
+    openBracket: (selector) => {
+      buffer.push(indent, selector, " {\n");
+      indent += "  ";
+    },
+    closeBracket: () => {
+      indent = indent.slice(2);
+      buffer.push(indent, "}\n\n");
+    },
+  };
+})();
+
+export const minified = createStringifier(minifyPrinter);
+export const pretty = createStringifier(prettyPrinter);

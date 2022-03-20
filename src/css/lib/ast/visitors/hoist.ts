@@ -1,21 +1,19 @@
 import type { Node } from "../../types";
-import type { Visitor } from "../../util/visit";
+import type { Visitor } from "../util/visit";
 
-const findRootOrClosestAtRule = (node: Node) => {
-  while (node.type === "declarationBlock") {
-    node = node.parent;
-  }
-  return node;
-};
+import { ROOT, findRootOrClosestAtRule } from "../node";
 
 export const hoist: Visitor<Node> = (node) => {
-  if (node.type !== "root") {
-    const root = findRootOrClosestAtRule(node.parent);
+  if (node.type !== ROOT) {
+    const { parent } = node;
+    const rootOrAtRule = findRootOrClosestAtRule(parent);
 
-    if (root !== node.parent) {
-      node.parent.children.splice(node.parent.children.indexOf(node), 1);
-      node.parent = root;
-      root.children.push(node);
+    if (rootOrAtRule !== parent) {
+      const { children: parentChildren } = parent;
+
+      parentChildren.splice(parentChildren.indexOf(node), 1);
+      node.parent = rootOrAtRule;
+      rootOrAtRule.children.push(node);
     }
   }
 };

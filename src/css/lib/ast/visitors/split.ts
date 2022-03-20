@@ -1,30 +1,23 @@
 import type { Node } from "../../types";
-import type { Visitor } from "../../util/visit";
+import type { Visitor } from "../util/visit";
 
-import { createChild } from "../node";
-
-export const findClosestDeclarationBlock = (node: Node) => {
-  while (node.type !== "root") {
-    if (node.type === "declarationBlock") {
-      return node;
-    }
-    node = node.parent;
-  }
-  return undefined;
-};
+import {
+  NESTED_AT_RULE,
+  DECLARATION_BLOCK,
+  findClosestDeclarationBlock,
+  createNode,
+} from "../node";
 
 export const split: Visitor<Node> = (node) => {
-  if (node.type === "nestedAtRule") {
-    const parentBlock = findClosestDeclarationBlock(node.parent);
+  if (node.type === NESTED_AT_RULE) {
+    const { declarations, children, parent } = node;
+    const parentBlock = findClosestDeclarationBlock(parent);
 
-    if (parentBlock && node.declarations.length > 0) {
-      const declarationsAsChild = createChild(
-        "declarationBlock",
-        Object.fromEntries(node.declarations),
-        parentBlock.selector,
-        node
-      );
-      node.children.unshift(declarationsAsChild);
+    if (typeof parentBlock !== "undefined" && declarations.length > 0) {
+      const { selector } = parentBlock;
+      const value = Object.fromEntries(declarations);
+
+      children.unshift(createNode(DECLARATION_BLOCK, value, selector, node));
       node.declarations = [];
     }
   }

@@ -1,5 +1,5 @@
 import type { Node, Value } from "../../types";
-import type { Visitor } from "../../util/visit";
+import type { Visitor } from "../util/visit";
 
 const angle = ["rotate", "offset-rotate"];
 
@@ -126,15 +126,22 @@ const length = [
   "width",
 ];
 
-const entries = (keys: string[], value: string) => {
-  return Object.fromEntries(keys.map((key) => [key, value]));
+const invert = (options: Record<string, string[]>) => {
+  const result: Record<string, string> = {};
+  const units = Object.keys(options);
+
+  for (let i = 0; i < units.length; i++) {
+    const unit = units[i];
+    const keys = options[unit];
+
+    for (let j = 0; j < keys.length; j++) {
+      result[keys[j]] = unit;
+    }
+  }
+  return result;
 };
 
-const defaults: Record<string, string> = {
-  ...entries(angle, "deg"),
-  ...entries(time, "ms"),
-  ...entries(length, "px"),
-};
+const defaults = invert({ deg: angle, ms: time, px: length });
 
 const { hasOwnProperty } = Object.prototype;
 
@@ -143,20 +150,19 @@ const appendValue = (value: string | number, unit: string) => {
 };
 
 const appendDeclaration = (declaration: [string, Value]) => {
-  const [key, value] = declaration;
+  const key = declaration[0];
+  const value = declaration[1];
+
   if (hasOwnProperty.call(defaults, key)) {
-    if (Array.isArray(value)) {
-      const next: string[] = [];
-      for (const part of value) {
-        next.push(appendValue(part, defaults[key]));
-      }
-      declaration[1] = next;
-    } else {
-      declaration[1] = appendValue(value, defaults[key]);
-    }
+    declaration[1] = appendValue(value, defaults[key]);
   }
 };
 
 export const units: Visitor<Node> = (node) => {
-  node.declarations.forEach(appendDeclaration);
+  const { declarations } = node;
+  const { length } = declarations;
+
+  for (let i = 0; i < length; i++) {
+    appendDeclaration(declarations[i]);
+  }
 };

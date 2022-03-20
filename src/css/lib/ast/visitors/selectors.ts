@@ -1,27 +1,29 @@
 import type { Node } from "../../types";
-import type { Visitor } from "../../util/visit";
+import type { Visitor } from "../util/visit";
 
-import { findClosestDeclarationBlock } from "./split";
+import { DECLARATION_BLOCK, findClosestDeclarationBlock } from "../node";
 
 const matchAmpSeparator = /\s*&\s*/g;
 
-const join = (a: string, b: string) => b.startsWith(":") ? a + b : a + " " + b;
+const isPseudoClass = (selector: string) => selector.slice(0, 1) === ":"
+
+const join = (a: string, b: string) => isPseudoClass(b) ? a + b : a + " " + b;
 
 export const selectors: Visitor<Node> = (node) => {
-  if (node.type === "declarationBlock") {
-    node.selector = node.selector.trim();
-    let currentParent = findClosestDeclarationBlock(node.parent);
+  if (node.type === DECLARATION_BLOCK) {
+    const { selector, parent } = node;
+
+    let currentParent = findClosestDeclarationBlock(parent);
 
     if (typeof currentParent !== "undefined") {
-      const parts = node.selector.trim().split(matchAmpSeparator, 2);
+      const parts = selector.split(matchAmpSeparator, 2);
 
       if (parts.length === 2) {
-        const [prepend, append] = parts;
-        node.selector = join(prepend, join(currentParent.selector, append));
+        node.selector = join(parts[0], join(currentParent.selector, parts[1]));
         currentParent = findClosestDeclarationBlock(currentParent.parent);
       }
     }
-    
+
     while (typeof currentParent !== "undefined") {
       node.selector = join(currentParent.selector, node.selector);
       currentParent = findClosestDeclarationBlock(currentParent.parent);
